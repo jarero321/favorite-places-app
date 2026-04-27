@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../framework/camera/camera_service.dart';
+import '../../../framework/design/app_radii.dart';
+import '../../../framework/design/app_spacing.dart';
 import '../../../framework/location/location_service.dart';
+import '../../../framework/widgets/app_section.dart';
 import '../places_scope.dart';
 
 class AddPlaceView extends StatefulWidget {
@@ -27,6 +30,12 @@ class _AddPlaceViewState extends State<AddPlaceView> {
   String? _imagePath;
   LatLng? _coords;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _title.addListener(() => setState(() {}));
+  }
 
   @override
   void dispose() {
@@ -58,7 +67,8 @@ class _AddPlaceViewState extends State<AddPlaceView> {
       case LocationDenied():
         _showSnack('Location permission denied.');
       case LocationDeniedForever():
-        _showSnack('Location permission permanently denied — enable it in Settings.');
+        _showSnack(
+            'Location permission permanently denied — enable it in Settings.');
     }
   }
 
@@ -78,31 +88,51 @@ class _AddPlaceViewState extends State<AddPlaceView> {
   }
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Add Place')),
+      appBar: AppBar(title: const Text('Add place')),
       body: AbsorbPointer(
         absorbing: _busy,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.md,
+            AppSpacing.xl,
+          ),
           children: [
-            TextField(
-              controller: _title,
-              decoration: const InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
+            AppSection(
+              title: 'Title',
+              child: TextField(
+                controller: _title,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  hintText: 'Where were you?',
+                ),
               ),
-              onChanged: (_) => setState(() {}),
             ),
-            const SizedBox(height: 16),
-            _PhotoSection(imagePath: _imagePath, onTake: _onTakePhoto),
-            const SizedBox(height: 16),
-            _LocationSection(coords: _coords, onCapture: _onCaptureLocation),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.lg),
+            AppSection(
+              title: 'Photo',
+              child: _PhotoSection(
+                imagePath: _imagePath,
+                onTake: _onTakePhoto,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppSection(
+              title: 'Location',
+              child: _LocationSection(
+                coords: _coords,
+                onCapture: _onCaptureLocation,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
             FilledButton.icon(
               onPressed: _canSave && !_busy ? _onSave : null,
               icon: _busy
@@ -111,8 +141,8 @@ class _AddPlaceViewState extends State<AddPlaceView> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.save),
-              label: const Text('Save'),
+                  : const Icon(Icons.save_outlined),
+              label: const Text('Save place'),
             ),
           ],
         ),
@@ -129,26 +159,29 @@ class _PhotoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AspectRatio(
-          aspectRatio: 16 / 10,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
+        ClipRRect(
+          borderRadius: AppRadii.brLg,
+          child: AspectRatio(
+            aspectRatio: 16 / 10,
+            child: ColoredBox(
+              color: colors.surfaceContainerHighest,
+              child: imagePath == null
+                  ? Center(
+                      child: Icon(Icons.photo_camera_outlined,
+                          size: 56, color: colors.outline),
+                    )
+                  : Image.file(File(imagePath!), fit: BoxFit.cover),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: imagePath == null
-                ? const Center(child: Icon(Icons.image_outlined, size: 64))
-                : Image.file(File(imagePath!), fit: BoxFit.cover),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         OutlinedButton.icon(
           onPressed: onTake,
-          icon: const Icon(Icons.photo_camera),
+          icon: const Icon(Icons.photo_camera_outlined),
           label: Text(imagePath == null ? 'Take photo' : 'Retake photo'),
         ),
       ],
@@ -164,30 +197,40 @@ class _LocationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
+            color: colors.surfaceContainerHighest,
+            borderRadius: AppRadii.brMd,
           ),
           child: Row(
             children: [
-              const Icon(Icons.place_outlined),
-              const SizedBox(width: 8),
+              Icon(Icons.place_outlined, color: colors.onSurfaceVariant),
+              const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Text(
                   coords == null
-                      ? 'No location yet'
+                      ? 'No location captured yet'
                       : '${coords!.latitude.toStringAsFixed(5)}, ${coords!.longitude.toStringAsFixed(5)}',
+                  style: text.bodyMedium?.copyWith(
+                    color: coords == null
+                        ? colors.onSurfaceVariant
+                        : colors.onSurface,
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         OutlinedButton.icon(
           onPressed: onCapture,
           icon: const Icon(Icons.my_location),
