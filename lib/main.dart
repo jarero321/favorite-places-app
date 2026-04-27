@@ -8,6 +8,7 @@ import 'app/places/viewmodel/places_view_model.dart';
 import 'app/router.dart';
 import 'framework/camera/camera_service.dart';
 import 'framework/db/app_database.dart';
+import 'framework/design/app_theme.dart';
 import 'framework/location/location_service.dart';
 import 'framework/share/share_service.dart';
 
@@ -55,10 +56,7 @@ class FavoritePlacesApp extends StatelessWidget {
       viewModel: viewModel,
       child: MaterialApp.router(
         title: 'Favorite Places',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorSchemeSeed: Colors.indigo,
-        ),
+        theme: AppTheme.light(),
         routerConfig: router,
       ),
     );
