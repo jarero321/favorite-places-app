@@ -9,6 +9,7 @@ import '../../../framework/design/app_radii.dart';
 import '../../../framework/design/app_spacing.dart';
 import '../../../framework/location/location_service.dart';
 import '../../../framework/widgets/app_section.dart';
+import '../../../framework/widgets/loading_overlay.dart';
 import '../places_scope.dart';
 
 class AddPlaceView extends StatefulWidget {
@@ -29,7 +30,7 @@ class _AddPlaceViewState extends State<AddPlaceView> {
   final _title = TextEditingController();
   String? _imagePath;
   LatLng? _coords;
-  bool _busy = false;
+  String? _busyMessage;
 
   @override
   void initState() {
@@ -43,21 +44,33 @@ class _AddPlaceViewState extends State<AddPlaceView> {
     super.dispose();
   }
 
+  bool get _busy => _busyMessage != null;
+
   bool get _canSave =>
       _title.text.trim().isNotEmpty && _imagePath != null && _coords != null;
 
+  void _setBusy(String? message) {
+    setState(() => _busyMessage = message);
+  }
+
   Future<void> _onTakePhoto() async {
-    final path = await widget.camera.takePhoto();
-    if (path != null && mounted) {
-      setState(() => _imagePath = path);
+    _setBusy('Processing photo...');
+    try {
+      final path = await widget.camera.takePhoto();
+      if (!mounted) return;
+      if (path != null) {
+        setState(() => _imagePath = path);
+      }
+    } finally {
+      if (mounted) _setBusy(null);
     }
   }
 
   Future<void> _onCaptureLocation() async {
-    setState(() => _busy = true);
+    _setBusy('Locating you...');
     final outcome = await widget.location.getCurrent();
     if (!mounted) return;
-    setState(() => _busy = false);
+    _setBusy(null);
 
     switch (outcome) {
       case LocationSuccess(:final coords):
@@ -76,7 +89,7 @@ class _AddPlaceViewState extends State<AddPlaceView> {
     if (!_canSave) return;
     final vm = PlacesScope.read(context);
     final coords = _coords!;
-    setState(() => _busy = true);
+    _setBusy('Saving...');
     await vm.addPlace(
       title: _title.text.trim(),
       imagePath: _imagePath!,
@@ -96,55 +109,53 @@ class _AddPlaceViewState extends State<AddPlaceView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Add place')),
-      body: AbsorbPointer(
-        absorbing: _busy,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.md,
-            AppSpacing.xl,
-          ),
-          children: [
-            AppSection(
-              title: 'Title',
-              child: TextField(
-                controller: _title,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  hintText: 'Where were you?',
+      body: LoadingOverlay(
+        visible: _busy,
+        message: _busyMessage,
+        child: AbsorbPointer(
+          absorbing: _busy,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.xl,
+            ),
+            children: [
+              AppSection(
+                title: 'Title',
+                child: TextField(
+                  controller: _title,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    hintText: 'Where were you?',
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            AppSection(
-              title: 'Photo',
-              child: _PhotoSection(
-                imagePath: _imagePath,
-                onTake: _onTakePhoto,
+              const SizedBox(height: AppSpacing.lg),
+              AppSection(
+                title: 'Photo',
+                child: _PhotoSection(
+                  imagePath: _imagePath,
+                  onTake: _onTakePhoto,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            AppSection(
-              title: 'Location',
-              child: _LocationSection(
-                coords: _coords,
-                onCapture: _onCaptureLocation,
+              const SizedBox(height: AppSpacing.lg),
+              AppSection(
+                title: 'Location',
+                child: _LocationSection(
+                  coords: _coords,
+                  onCapture: _onCaptureLocation,
+                ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            FilledButton.icon(
-              onPressed: _canSave && !_busy ? _onSave : null,
-              icon: _busy
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.save_outlined),
-              label: const Text('Save place'),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.xl),
+              FilledButton.icon(
+                onPressed: _canSave && !_busy ? _onSave : null,
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save place'),
+              ),
+            ],
+          ),
         ),
       ),
     );
