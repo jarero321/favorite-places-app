@@ -185,7 +185,13 @@ class _PhotoSection extends StatelessWidget {
                       child: Icon(Icons.photo_camera_outlined,
                           size: 56, color: colors.outline),
                     )
-                  : Image.file(File(imagePath!), fit: BoxFit.cover),
+                  : Image(
+                      image: ResizeImage(
+                        FileImage(File(imagePath!)),
+                        width: 1024,
+                      ),
+                      fit: BoxFit.cover,
+                    ),
             ),
           ),
         ),

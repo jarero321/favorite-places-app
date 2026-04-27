@@ -12,8 +12,6 @@ class CameraService {
   Future<String?> takePhoto() async {
     final picked = await _picker.pickImage(
       source: ImageSource.camera,
-      maxWidth: 1280,
-      imageQuality: 80,
       requestFullMetadata: false,
     );
     if (picked == null) return null;

@@ -84,8 +84,11 @@ class _PlaceCard extends StatelessWidget {
           children: [
             AspectRatio(
               aspectRatio: 16 / 10,
-              child: Image.file(
-                File(place.imagePath),
+              child: Image(
+                image: ResizeImage(
+                  FileImage(File(place.imagePath)),
+                  width: 1024,
+                ),
                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => ColoredBox(
                   color: colors.surfaceContainerHighest,

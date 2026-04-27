@@ -90,8 +90,11 @@ class PlaceDetailView extends StatelessWidget {
                 borderRadius: AppRadii.brLg,
                 child: AspectRatio(
                   aspectRatio: 16 / 10,
-                  child: Image.file(
-                    File(place.imagePath),
+                  child: Image(
+                    image: ResizeImage(
+                      FileImage(File(place.imagePath)),
+                      width: 1280,
+                    ),
                     fit: BoxFit.cover,
                   ),
                 ),
